@@ -1,0 +1,19 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.20.0
+    ports: ["127.0.0.1:6333:6333"]
+    volumes: [qdrant_dev:/qdrant/storage]
+  
+  postgres:
+    image: postgres:17-alpine
+    ports: ["127.0.0.1:5432:5432"]
+    environment: {POSTGRES_PASSWORD: postgres, POSTGRES_DB: copilot}
+    volumes: [pg_dev:/var/lib/postgresql/data]
+  
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6379:6379"]
+
+volumes:
+  qdrant_dev:
+  pg_dev:
