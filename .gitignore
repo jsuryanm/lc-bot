@@ -224,3 +224,9 @@ __marimo__/
 
 # data
 data
+# Claude Code personal files
+.claude/settings.local.json
+CLAUDE.local.md
+
+# loguru output
+logs/

@@ -5,6 +5,10 @@ from pathlib import Path
 
 import yaml
 
+from app.core.logging import logger, setup_logging
+
+setup_logging()
+
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 FENCE = re.compile(r"^\s*(```|~~~)")
 IMPORT = re.compile(r"^import\s.+\sfrom\s+['\"].+['\"];?\s*$")
@@ -32,7 +36,8 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
         return {}, text
     try:
         meta = yaml.safe_load(match.group(1)) or {}
-    except yaml.YAMLError:
+    except yaml.YAMLError as e:
+        logger.warning("Invalid YAML frontmatter, ignoring it: {}", e)
         meta = {}
     return (meta if isinstance(meta, dict) else {}), text[match.end() :]
 
@@ -135,6 +140,7 @@ def load_page(path: Path, repo_root: Path) -> Page:
     rel_path = path.relative_to(repo_root).as_posix()
     product, folder_language = classify(rel_path)
     segments = [(lang, clean_mdx(text)) for lang, text in split_languages(body)]
+    logger.debug("Loaded {} ({} segments, product={})", rel_path, len(segments), product)
     return Page(
         rel_path=rel_path,
         title=str(meta.get("title") or path.stem),
