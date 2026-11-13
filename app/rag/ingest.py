@@ -38,4 +38,46 @@ HEADERS = MarkdownHeaderTextSplitter(
 
 SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
+def find_pages(repo: Path) -> list[Path]:
+    """Finds and returns all MDX files under the specified source directories, excluding skipped folders."""
+    src = repo / "src"
+    found = (
+        p for root in ROOTS
+        for p in (src/root).rglob("*.mdx")
+    )
+    return sorted(p 
+                  for p in found 
+                  if not SKIP_FOLDERS & set(p.relative_to(src).parts))
+
+def repo_info(repo: Path) -> tuple[str, str]:
+    """(commit sha, license name). The license is read from the repo, not assumed."""
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        sha = "unknown"
+    license_file = repo / "LICENSE"
+    first_line = license_file.read_text().splitlines()[0].strip() if license_file.exists() else ""
+    if first_line != "MIT License":
+        logger.warning(
+            "LICENSE is %r, not 'MIT License'. Check it before using this index.", first_line
+        )
+    return sha, "MIT" if first_line == "MIT License" else "unknown"
+
+def to_documents(
+    page: Page,
+    languages: set[str],
+    commit: str,
+    license_name: str
+) -> list[Document]:
+    """Chunk one page. Chunks keep their heading path so a hit is easy to cite."""
+    docs: list[Document] = []
+    retrieved_at = datetime.now(UTC).isoformat(timespec='seconds')
+
+    for segment_language, text in page.segments:
+        language = (
+            segment_language if segment_language != "all"
+
+        )
 
